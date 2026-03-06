@@ -1,0 +1,14 @@
+.env
+/Data Processing/
+mechanic-ai.zip
+/Frontend/node_modules/
+/Middleware/node_modules/
+/mechanicai copy/
+/google-gemini-clone/
+/Gemini/
+/MechanicAI_2/
+/Products/
+/Frontend(1)/node_modules/
+ngrok.exe
+ngrok.txt
+/Frontend/build/
