@@ -59,6 +59,38 @@ const Main = ({ user, onLogout }) => {
     }
   };
 
+  //Location Search
+  const handleLocationSearch = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          setIsSending(true);
+          const data = await ChatAPI.fetchNearbyShops(latitude, longitude);
+
+          if (data.success) {
+            // Navigate to chat and pass the shop results as state
+            navigate(`/chat/location-results`, {
+              state: { shops: data.results, fromLocation: true },
+            });
+          }
+        } catch (error) {
+          toast.error("Could not find nearby shops.");
+        } finally {
+          setIsSending(false);
+        }
+      },
+      () => {
+        toast.error("Please enable location access to find shops.");
+      },
+    );
+  };
+
   // Create new session
   const createNewSession = async (message) => {
     try {
@@ -109,6 +141,10 @@ const Main = ({ user, onLogout }) => {
               />
             </div>
           ))}
+          <div className="card" onClick={handleLocationSearch}>
+            <p>Find Nearest Repair Shops</p>
+            <img src={assets.compass_icon} alt="Location Icon" />
+          </div>
         </div>
         <div className="main-bottom">
           <div className="search-box">
@@ -129,10 +165,7 @@ const Main = ({ user, onLogout }) => {
               }}
               disabled={isSending}
             >
-              <img
-                src={assets.send_icon || ""}
-                alt="Send Icon"
-              />
+              <img src={assets.send_icon || ""} alt="Send Icon" />
             </div>
           </div>
           <p className="bottom-info">AI may provide inaccurate information</p>

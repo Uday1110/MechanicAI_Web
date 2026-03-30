@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5000/api";
-// const API_BASE_URL = "https://reindeer-glad-instantly.ngrok-free.app/api";
 
 class ChatAPI {
   static async createSession(userId, message) {
@@ -72,6 +71,21 @@ class ChatAPI {
         userId,
         sessionId,
       });
+      return response.data;
+    } catch (error) {
+      return ChatAPI.handleError(error);
+    }
+  }
+
+  // This is the new method we added for the Location feature
+  static async fetchNearbyShops(lat, lng) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/location/nearby-shops`,
+        {
+          params: { lat, lng },
+        },
+      );
       return response.data;
     } catch (error) {
       return ChatAPI.handleError(error);

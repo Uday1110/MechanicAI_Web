@@ -43,8 +43,8 @@ const ChatPage = ({ user, onLogout }) => {
         };
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
-            msg.id === placeholderId ? botMessage : msg
-          )
+            msg.id === placeholderId ? botMessage : msg,
+          ),
         );
         setLoading(false);
       } catch (error) {
@@ -54,13 +54,26 @@ const ChatPage = ({ user, onLogout }) => {
         setIsSending(false); // Re-enable the button after the response
       }
     },
-    [userId, sessionId]
+    [userId, sessionId],
   );
 
   useEffect(() => {
     const initializeChat = async () => {
       if (initializationRef.current) return;
       initializationRef.current = true;
+
+      //Check if we are coming from a Location Search
+      if (state?.fromLocation) {
+        const locationMessage = {
+          sender: "bot",
+          isLocation: true, // New flag to identify location data
+          shops: state.shops || [],
+          message: `I found ${state.shops?.length || 0} repair shops near you:`,
+        };
+        setMessages([locationMessage]);
+        setLoading(false);
+        return; // STOP HERE: Don't call ChatAPI.getHistory
+      }
 
       if (state?.initialMessage && state?.fromMain) {
         const initialMessage = {
@@ -109,7 +122,7 @@ const ChatPage = ({ user, onLogout }) => {
     if (loading) {
       interval = setInterval(() => {
         setPlaceholderIndex(
-          (prevIndex) => (prevIndex + 1) % placeholderMessages.length
+          (prevIndex) => (prevIndex + 1) % placeholderMessages.length,
         );
       }, 2000); // Rotate every second
     }
@@ -160,19 +173,82 @@ const ChatPage = ({ user, onLogout }) => {
               >
                 {message.sender === "bot" ? (
                   <>
-                    <ReactMarkdown
-                      className={`bot-formatted-response ${
-                        loading && message.id ? "pulse-animation" : ""
-                      }`}
-                    >
-                      {loading && message.id
-                        ? placeholderMessages[placeholderIndex]
-                        : message.message}
-                    </ReactMarkdown>
+                    {/* NEW: Check if this is a location results message */}
+                    {message.isLocation ? (
+                      <div className="location-results">
+                        <p style={{ marginBottom: "10px", fontWeight: "600" }}>
+                          {message.message}
+                        </p>
+                        <div
+                          className="shop-list"
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "10px",
+                          }}
+                        >
+                          {message.shops && message.shops.length > 0 ? (
+                            message.shops.map((shop, idx) => (
+                              <div
+                                key={idx}
+                                className="shop-card"
+                                style={{
+                                  background: "rgba(255, 255, 255, 0.1)",
+                                  padding: "12px",
+                                  borderRadius: "8px",
+                                  border: "1px solid rgba(255, 255, 255, 0.05)",
+                                }}
+                              >
+                                <strong
+                                  style={{ fontSize: "16px", color: "#fff" }}
+                                >
+                                  {shop.name}
+                                </strong>
+                                <p
+                                  style={{
+                                    fontSize: "13px",
+                                    color: "#ccc",
+                                    margin: "5px 0",
+                                  }}
+                                >
+                                  📍 {shop.vicinity}
+                                </p>
+                                {shop.rating && (
+                                  <span
+                                    style={{
+                                      color: "#ffcc00",
+                                      fontSize: "13px",
+                                    }}
+                                  >
+                                    ⭐ {shop.rating}
+                                  </span>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <p>No shops found in this area.</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Standard Bot Response (Markdown) */
+                      <ReactMarkdown
+                        className={`bot-formatted-response ${
+                          loading && message.id ? "pulse-animation" : ""
+                        }`}
+                      >
+                        {loading && message.id
+                          ? placeholderMessages[placeholderIndex]
+                          : message.message}
+                      </ReactMarkdown>
+                    )}
 
                     {/* Display URLs if available */}
                     {message.urls && message.urls.length > 0 && (
-                      <div className="urls-container">
+                      <div
+                        className="urls-container"
+                        style={{ marginTop: "10px" }}
+                      >
                         {message.urls.map((urlData, idx) => (
                           <a
                             key={idx}
@@ -188,6 +264,7 @@ const ChatPage = ({ user, onLogout }) => {
                     )}
                   </>
                 ) : (
+                  /* User Message */
                   <p>{message.message}</p>
                 )}
               </motion.div>
@@ -211,7 +288,6 @@ const ChatPage = ({ user, onLogout }) => {
                 opacity: isSending ? 0.5 : 1,
                 cursor: isSending ? "not-allowed" : "pointer",
               }}
-              disabled={isSending}
             >
               <img src={assets.send_icon || ""} alt="Send Icon" />
             </div>

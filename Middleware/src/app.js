@@ -1,8 +1,8 @@
-const express = require('express');
-const connectDB = require('./config/database');
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
+const express = require("express");
+const connectDB = require("./config/database");
+const cors = require("cors");
+const path = require("path");
+require("dotenv").config();
 
 const app = express();
 
@@ -12,23 +12,26 @@ app.use(cors());
 
 // Ensure environment variables are loaded
 if (!process.env.MECHAI_CHATS_URI) {
-  console.error('Error: MECHAI_CHATS_URI is not defined in .env file.');
+  console.error("Error: MECHAI_CHATS_URI is not defined in .env file.");
   process.exit(1);
 }
 
 // Connect to MongoDB Chats Database
 connectDB(process.env.MECHAI_CHATS_URI);
 
+//Location routes
+app.use("/api/location", require("./routes/locationRoutes"));
+
 // Routes
-app.use('/api', require('./routes/chatRoutes'));
+app.use("/api", require("./routes/chatRoutes"));
 
 // Serve static files from React frontend
-const frontendBuildPath = path.join(__dirname,'..', '..', 'Frontend', 'build');
+const frontendBuildPath = path.join(__dirname, "..", "..", "Frontend", "build");
 app.use(express.static(frontendBuildPath));
 
 // Handle SPA routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, "index.html"));
 });
 
 // Start the server
