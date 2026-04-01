@@ -188,43 +188,89 @@ const ChatPage = ({ user, onLogout }) => {
                           }}
                         >
                           {message.shops && message.shops.length > 0 ? (
-                            message.shops.map((shop, idx) => (
-                              <div
-                                key={idx}
-                                className="shop-card"
-                                style={{
-                                  background: "rgba(255, 255, 255, 0.1)",
-                                  padding: "12px",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(255, 255, 255, 0.05)",
-                                }}
-                              >
-                                <strong
-                                  style={{ fontSize: "16px", color: "#fff" }}
-                                >
-                                  {shop.name}
-                                </strong>
-                                <p
+                            message.shops.map((shop, idx) => {
+                              // Construct a Google Maps search URL using the shop name and address
+                              const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                `${shop.name} ${shop.vicinity}`,
+                              )}`;
+
+                              return (
+                                <a
+                                  key={idx}
+                                  href={googleMapsUrl}
+                                  target="_blank" // Open in a new tab
+                                  rel="noopener noreferrer" // Security best practice for new tabs
                                   style={{
-                                    fontSize: "13px",
-                                    color: "#ccc",
-                                    margin: "5px 0",
+                                    textDecoration: "none",
+                                    color: "inherit",
                                   }}
                                 >
-                                  📍 {shop.vicinity}
-                                </p>
-                                {shop.rating && (
-                                  <span
+                                  <div
+                                    className="shop-card"
                                     style={{
-                                      color: "#ffcc00",
-                                      fontSize: "13px",
+                                      background: "rgba(255, 255, 255, 0.1)",
+                                      padding: "12px",
+                                      borderRadius: "8px",
+                                      border:
+                                        "1px solid rgba(255, 255, 255, 0.05)",
+                                      cursor: "pointer",
+                                      transition: "transform 0.2s ease",
                                     }}
+                                    onMouseOver={(e) =>
+                                      (e.currentTarget.style.transform =
+                                        "scale(1.02)")
+                                    }
+                                    onMouseOut={(e) =>
+                                      (e.currentTarget.style.transform =
+                                        "scale(1)")
+                                    }
                                   >
-                                    ⭐ {shop.rating}
-                                  </span>
-                                )}
-                              </div>
-                            ))
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                      }}
+                                    >
+                                      <strong
+                                        style={{
+                                          fontSize: "16px",
+                                          color: "#fff",
+                                        }}
+                                      >
+                                        {shop.name}
+                                      </strong>
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#4daafc",
+                                        }}
+                                      >
+                                        View on Maps ↗
+                                      </span>
+                                    </div>
+                                    <p
+                                      style={{
+                                        fontSize: "13px",
+                                        color: "#ccc",
+                                        margin: "5px 0",
+                                      }}
+                                    >
+                                      📍 {shop.vicinity}
+                                    </p>
+                                    {shop.rating && (
+                                      <span
+                                        style={{
+                                          color: "#ffcc00",
+                                          fontSize: "13px",
+                                        }}
+                                      >
+                                        ⭐ {shop.rating}
+                                      </span>
+                                    )}
+                                  </div>
+                                </a>
+                              );
+                            })
                           ) : (
                             <p>No shops found in this area.</p>
                           )}
