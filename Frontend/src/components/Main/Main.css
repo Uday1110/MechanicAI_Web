@@ -78,7 +78,7 @@ body {
   background-color: #2e3240;
 }
 
-.main-bottom {
+/* .main-bottom {
   position: absolute;
   bottom: 0;
   width: 100%;
@@ -86,16 +86,33 @@ body {
   padding: 0px 20px;
   margin: auto;
   padding-left: 20px;
+} */
+
+.main-bottom {
+  position: fixed;
+  bottom: 0;
+  /* Centering logic for fixed elements */
+  left: 50%;
+  transform: translateX(-50%);
+  
+  /* Size logic - matching the home page feel */
+  width: 100%;
+  max-width: 700px; /* Adjust this to match your home page search box width */
+  
+  padding: 0px 20px;
+  margin-bottom: 20px; /* Adds a gap from the bottom edge */
+  z-index: 1000;
 }
 
 .search-box {
   display: flex;
   align-items: center;
-  gap: 25px;
-  justify-content: space-between;
+  gap: 15px;
   background-color: #232530;
   padding: 10px 20px;
   border-radius: 50px;
+  /* Add a slight shadow to make it pop over the chat content */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); 
 }
 
 .search-box .send-icon {
@@ -131,11 +148,21 @@ body {
   color: #ff9001;
 }
 
-.chat-section {
+/* .chat-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
   height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding: 20px;
+  scroll-behavior: smooth;
+} */
+
+.chat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: calc(100vh - 220px); /* Adjust the 220px if the bar overlaps text */
   overflow-y: auto;
   padding: 20px;
   scroll-behavior: smooth;

@@ -28,34 +28,47 @@ const ChatPage = ({ user, onLogout }) => {
   const placeholderMessages = ["Thinking...", "Diagnosing...", "Just a sec..."];
 
   const handleBotResponse = useCallback(
-    async (userInput, placeholderId) => {
+  async (userInput, placeholderId) => {
+    // Get user coordinates
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      
       try {
-        const data = await ChatAPI.addMessage(userId, sessionId, userInput);
+        // Send lat/lng to the backend
+        const data = await ChatAPI.addMessage(userId, sessionId, userInput, latitude, longitude);
+        
         if (!data.success) {
-          toast.error(data.error); // Replaced alert with toast
+          toast.error(data.error);
           setLoading(false);
           return;
         }
+
         const botMessage = {
           sender: "bot",
           message: data.response,
-          urls: data.urls, // Add urls to the bot message
+          urls: data.urls,
+          isLocation: data.isLocation, // Capture the location flag
+          shops: data.shops,           // Capture the list of places
         };
+
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
-            msg.id === placeholderId ? botMessage : msg,
-          ),
+            msg.id === placeholderId ? botMessage : msg
+          )
         );
         setLoading(false);
       } catch (error) {
-        console.error("Error in bot response:", error);
-        toast.error("An error occurred while fetching the bot response."); // Added toast for error
+        toast.error("Error fetching response.");
       } finally {
-        setIsSending(false); // Re-enable the button after the response
+        setIsSending(false);
       }
-    },
-    [userId, sessionId],
-  );
+    }, (err) => {
+      toast.error("Location access is required for this feature.");
+      setIsSending(false);
+    });
+  },
+  [userId, sessionId]
+);
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -173,12 +186,20 @@ const ChatPage = ({ user, onLogout }) => {
               >
                 {message.sender === "bot" ? (
                   <>
-                    {/* NEW: Check if this is a location results message */}
-                    {message.isLocation ? (
-                      <div className="location-results">
-                        <p style={{ marginBottom: "10px", fontWeight: "600" }}>
-                          {message.message}
-                        </p>
+                    {/* 1. ALWAYS render the bot text with Markdown for consistent font/styling */}
+                    <ReactMarkdown
+                      className={`bot-formatted-response ${
+                        loading && message.id ? "pulse-animation" : ""
+                      }`}
+                    >
+                      {loading && message.id
+                        ? placeholderMessages[placeholderIndex]
+                        : message.message}
+                    </ReactMarkdown>
+
+                    {/* 2. Conditionally render Location Cards BELOW the text if flag is true */}
+                    {message.isLocation && (
+                      <div className="location-results" style={{ marginTop: "15px" }}>
                         <div
                           className="shop-list"
                           style={{
@@ -189,17 +210,16 @@ const ChatPage = ({ user, onLogout }) => {
                         >
                           {message.shops && message.shops.length > 0 ? (
                             message.shops.map((shop, idx) => {
-                              // Construct a Google Maps search URL using the shop name and address
                               const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                `${shop.name} ${shop.vicinity}`,
+                                `${shop.name} ${shop.vicinity}`
                               )}`;
 
                               return (
                                 <a
                                   key={idx}
                                   href={googleMapsUrl}
-                                  target="_blank" // Open in a new tab
-                                  rel="noopener noreferrer" // Security best practice for new tabs
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                   style={{
                                     textDecoration: "none",
                                     color: "inherit",
@@ -211,18 +231,15 @@ const ChatPage = ({ user, onLogout }) => {
                                       background: "rgba(255, 255, 255, 0.1)",
                                       padding: "12px",
                                       borderRadius: "8px",
-                                      border:
-                                        "1px solid rgba(255, 255, 255, 0.05)",
+                                      border: "1px solid rgba(255, 255, 255, 0.05)",
                                       cursor: "pointer",
                                       transition: "transform 0.2s ease",
                                     }}
                                     onMouseOver={(e) =>
-                                      (e.currentTarget.style.transform =
-                                        "scale(1.02)")
+                                      (e.currentTarget.style.transform = "scale(1.02)")
                                     }
                                     onMouseOut={(e) =>
-                                      (e.currentTarget.style.transform =
-                                        "scale(1)")
+                                      (e.currentTarget.style.transform = "scale(1)")
                                     }
                                   >
                                     <div
@@ -231,39 +248,18 @@ const ChatPage = ({ user, onLogout }) => {
                                         justifyContent: "space-between",
                                       }}
                                     >
-                                      <strong
-                                        style={{
-                                          fontSize: "16px",
-                                          color: "#fff",
-                                        }}
-                                      >
+                                      <strong style={{ fontSize: "16px", color: "#fff" }}>
                                         {shop.name}
                                       </strong>
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          color: "#4daafc",
-                                        }}
-                                      >
+                                      <span style={{ fontSize: "12px", color: "#4daafc" }}>
                                         View on Maps ↗
                                       </span>
                                     </div>
-                                    <p
-                                      style={{
-                                        fontSize: "13px",
-                                        color: "#ccc",
-                                        margin: "5px 0",
-                                      }}
-                                    >
+                                    <p style={{ fontSize: "13px", color: "#ccc", margin: "5px 0" }}>
                                       📍 {shop.vicinity}
                                     </p>
                                     {shop.rating && (
-                                      <span
-                                        style={{
-                                          color: "#ffcc00",
-                                          fontSize: "13px",
-                                        }}
-                                      >
+                                      <span style={{ color: "#ffcc00", fontSize: "13px" }}>
                                         ⭐ {shop.rating}
                                       </span>
                                     )}
@@ -272,29 +268,17 @@ const ChatPage = ({ user, onLogout }) => {
                               );
                             })
                           ) : (
-                            <p>No shops found in this area.</p>
+                            <p style={{ fontSize: "14px", color: "#888" }}>
+                              No nearby options found.
+                            </p>
                           )}
                         </div>
                       </div>
-                    ) : (
-                      /* Standard Bot Response (Markdown) */
-                      <ReactMarkdown
-                        className={`bot-formatted-response ${
-                          loading && message.id ? "pulse-animation" : ""
-                        }`}
-                      >
-                        {loading && message.id
-                          ? placeholderMessages[placeholderIndex]
-                          : message.message}
-                      </ReactMarkdown>
                     )}
 
-                    {/* Display URLs if available */}
+                    {/* 3. Display Spare Parts URLs if available */}
                     {message.urls && message.urls.length > 0 && (
-                      <div
-                        className="urls-container"
-                        style={{ marginTop: "10px" }}
-                      >
+                      <div className="urls-container" style={{ marginTop: "10px" }}>
                         {message.urls.map((urlData, idx) => (
                           <a
                             key={idx}
@@ -310,39 +294,40 @@ const ChatPage = ({ user, onLogout }) => {
                     )}
                   </>
                 ) : (
-                  /* User Message */
-                  <p>{message.message}</p>
+                  <p className="user-text">{message.message}</p>
                 )}
               </motion.div>
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="main-bottom">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Enter your message here"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            />
-            <div
-              className="send-icon"
-              onClick={handleSend}
-              style={{
-                opacity: isSending ? 0.5 : 1,
-                cursor: isSending ? "not-allowed" : "pointer",
-              }}
-            >
-              <img src={assets.send_icon || ""} alt="Send Icon" />
-            </div>
+      {/* MOVED: Now outside main-container and use the fixed class */}
+      <div className="main-bottom-fixed">
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Enter your message here"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          />
+          <div
+            className="send-icon"
+            onClick={handleSend}
+            style={{
+              opacity: isSending ? 0.5 : 1,
+              cursor: isSending ? "not-allowed" : "pointer",
+            }}
+          >
+            <img src={assets.send_icon || ""} alt="Send Icon" />
           </div>
-          <p className="bottom-info">AI may provide inaccurate information</p>
         </div>
+        <p className="bottom-info">AI may provide inaccurate information</p>
       </div>
     </div>
   );
 };
 
 export default ChatPage;
+

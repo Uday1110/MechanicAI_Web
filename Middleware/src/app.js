@@ -20,7 +20,8 @@ if (!process.env.MECHAI_CHATS_URI) {
 connectDB(process.env.MECHAI_CHATS_URI);
 
 //Location routes
-app.use("/api/location", require("./routes/locationRoutes"));
+const { router: locationRouter } = require("./routes/locationRoutes");
+app.use("/api/location", locationRouter);
 
 // Routes
 app.use("/api", require("./routes/chatRoutes"));

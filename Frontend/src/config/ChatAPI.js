@@ -77,6 +77,21 @@ class ChatAPI {
     }
   }
 
+  static async addMessage(userId, sessionId, message, lat, lng) { // Add lat, lng params
+  try {
+    const response = await axios.post(`${API_BASE_URL}/message`, {
+      userId,
+      sessionId,
+      message,
+      lat, // Add to body
+      lng  // Add to body
+    });
+    return response.data;
+  } catch (error) {
+    return ChatAPI.handleError(error);
+  }
+}
+
   // This is the new method we added for the Location feature
   static async fetchNearbyShops(lat, lng) {
     try {
