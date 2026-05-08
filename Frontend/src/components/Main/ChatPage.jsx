@@ -28,47 +28,56 @@ const ChatPage = ({ user, onLogout }) => {
   const placeholderMessages = ["Thinking...", "Diagnosing...", "Just a sec..."];
 
   const handleBotResponse = useCallback(
-  async (userInput, placeholderId) => {
-    // Get user coordinates
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-      
-      try {
-        // Send lat/lng to the backend
-        const data = await ChatAPI.addMessage(userId, sessionId, userInput, latitude, longitude);
-        
-        if (!data.success) {
-          toast.error(data.error);
-          setLoading(false);
-          return;
-        }
+    async (userInput, placeholderId) => {
+      // Get user coordinates
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
 
-        const botMessage = {
-          sender: "bot",
-          message: data.response,
-          urls: data.urls,
-          isLocation: data.isLocation, // Capture the location flag
-          shops: data.shops,           // Capture the list of places
-        };
+          try {
+            // Send lat/lng to the backend
+            const data = await ChatAPI.addMessage(
+              userId,
+              sessionId,
+              userInput,
+              latitude,
+              longitude,
+            );
 
-        setMessages((prevMessages) =>
-          prevMessages.map((msg) =>
-            msg.id === placeholderId ? botMessage : msg
-          )
-        );
-        setLoading(false);
-      } catch (error) {
-        toast.error("Error fetching response.");
-      } finally {
-        setIsSending(false);
-      }
-    }, (err) => {
-      toast.error("Location access is required for this feature.");
-      setIsSending(false);
-    });
-  },
-  [userId, sessionId]
-);
+            if (!data.success) {
+              toast.error(data.error);
+              setLoading(false);
+              return;
+            }
+
+            const botMessage = {
+              sender: "bot",
+              message: data.response,
+              urls: data.urls,
+              isLocation: data.isLocation, // Capture the location flag
+              shops: data.shops, // Capture the list of places
+            };
+
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) =>
+                msg.id === placeholderId ? botMessage : msg,
+              ),
+            );
+            setLoading(false);
+          } catch (error) {
+            toast.error("Error fetching response.");
+          } finally {
+            setIsSending(false);
+          }
+        },
+        (err) => {
+          toast.error("Location access is required for this feature.");
+          setIsSending(false);
+        },
+      );
+    },
+    [userId, sessionId],
+  );
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -77,15 +86,18 @@ const ChatPage = ({ user, onLogout }) => {
 
       //Check if we are coming from a Location Search
       if (state?.fromLocation) {
+        const isHotels = state?.locationType === "hotels";
         const locationMessage = {
           sender: "bot",
-          isLocation: true, // New flag to identify location data
+          isLocation: true,
           shops: state.shops || [],
-          message: `I found ${state.shops?.length || 0} repair shops near you:`,
+          message: isHotels
+            ? `I found ${state.shops?.length || 0} hotels & restaurants near you:`
+            : `I found ${state.shops?.length || 0} repair shops near you:`,
         };
         setMessages([locationMessage]);
         setLoading(false);
-        return; // STOP HERE: Don't call ChatAPI.getHistory
+        return;
       }
 
       if (state?.initialMessage && state?.fromMain) {
@@ -199,7 +211,10 @@ const ChatPage = ({ user, onLogout }) => {
 
                     {/* 2. Conditionally render Location Cards BELOW the text if flag is true */}
                     {message.isLocation && (
-                      <div className="location-results" style={{ marginTop: "15px" }}>
+                      <div
+                        className="location-results"
+                        style={{ marginTop: "15px" }}
+                      >
                         <div
                           className="shop-list"
                           style={{
@@ -211,7 +226,7 @@ const ChatPage = ({ user, onLogout }) => {
                           {message.shops && message.shops.length > 0 ? (
                             message.shops.map((shop, idx) => {
                               const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                `${shop.name} ${shop.vicinity}`
+                                `${shop.name} ${shop.vicinity}`,
                               )}`;
 
                               return (
@@ -229,37 +244,67 @@ const ChatPage = ({ user, onLogout }) => {
                                     className="shop-card"
                                     style={{
                                       background: "rgba(255, 255, 255, 0.1)",
-                                      padding: "12px",
-                                      borderRadius: "8px",
-                                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                                      padding: "18px 16px",
+                                      borderRadius: "10px",
+                                      border:
+                                        "1px solid rgba(255, 255, 255, 0.08)",
                                       cursor: "pointer",
                                       transition: "transform 0.2s ease",
                                     }}
                                     onMouseOver={(e) =>
-                                      (e.currentTarget.style.transform = "scale(1.02)")
+                                      (e.currentTarget.style.transform =
+                                        "scale(1.02)")
                                     }
                                     onMouseOut={(e) =>
-                                      (e.currentTarget.style.transform = "scale(1)")
+                                      (e.currentTarget.style.transform =
+                                        "scale(1)")
                                     }
                                   >
                                     <div
                                       style={{
                                         display: "flex",
                                         justifyContent: "space-between",
+                                        alignItems: "flex-start",
+                                        gap: "10px",
                                       }}
                                     >
-                                      <strong style={{ fontSize: "16px", color: "#fff" }}>
+                                      <strong
+                                        style={{
+                                          fontSize: "20px",
+                                          color: "#fff",
+                                          lineHeight: 1.3,
+                                        }}
+                                      >
                                         {shop.name}
                                       </strong>
-                                      <span style={{ fontSize: "12px", color: "#4daafc" }}>
+                                      <span
+                                        style={{
+                                          fontSize: "15px",
+                                          color: "#4daafc",
+                                          whiteSpace: "nowrap",
+                                          marginTop: "2px",
+                                        }}
+                                      >
                                         View on Maps ↗
                                       </span>
                                     </div>
-                                    <p style={{ fontSize: "13px", color: "#ccc", margin: "5px 0" }}>
+                                    <p
+                                      style={{
+                                        fontSize: "16px",
+                                        color: "#ccc",
+                                        margin: "8px 0 4px",
+                                      }}
+                                    >
                                       📍 {shop.vicinity}
                                     </p>
                                     {shop.rating && (
-                                      <span style={{ color: "#ffcc00", fontSize: "13px" }}>
+                                      <span
+                                        style={{
+                                          color: "#ffcc00",
+                                          fontSize: "16px",
+                                          fontWeight: 600,
+                                        }}
+                                      >
                                         ⭐ {shop.rating}
                                       </span>
                                     )}
@@ -278,7 +323,10 @@ const ChatPage = ({ user, onLogout }) => {
 
                     {/* 3. Display Spare Parts URLs if available */}
                     {message.urls && message.urls.length > 0 && (
-                      <div className="urls-container" style={{ marginTop: "10px" }}>
+                      <div
+                        className="urls-container"
+                        style={{ marginTop: "10px" }}
+                      >
                         {message.urls.map((urlData, idx) => (
                           <a
                             key={idx}
@@ -330,4 +378,3 @@ const ChatPage = ({ user, onLogout }) => {
 };
 
 export default ChatPage;
-
